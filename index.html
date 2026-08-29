@@ -356,26 +356,59 @@
       }
     }
 
-    // İki tonlu çift "bip" uyarı sesi
-    function playAlertSound() {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      
-      // 1. Ton
-      const osc1 = ctx.createOscillator();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(587.33, ctx.currentTime);
-      osc1.connect(ctx.destination);
-      osc1.start(ctx.currentTime);
-      osc1.stop(ctx.currentTime + 0.2);
 
-      // 2. Ton
-      const osc2 = ctx.createOscillator();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.25);
-      osc2.connect(ctx.destination);
-      osc2.start(ctx.currentTime + 0.25);
-      osc2.stop(ctx.currentTime + 0.55);
+function playAlertSound() {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  
+  const ctx = new AudioContext();
+  const duration = 5.0; // Toplam çalma süresi (5 saniye)
+  const startTime = ctx.currentTime;
+
+  // Melodi Notası Frekansları (Yumuşak C-Major / Am7 Gamı)
+  // C5, E5, G5, B5, C6 (Do, Mi, Sol, Si, Do)
+  const notes = [523.25, 659.25, 783.99, 987.77, 1046.50];
+  
+  // Ritim Aralığı: Her 0.18 saniyede bir nota çalar
+  const noteInterval = 0.18; 
+  let noteIndex = 0;
+
+  // 5 saniye boyunca döngüsel olarak notaları çal
+  for (let elapsed = 0; elapsed < duration - 0.5; elapsed += noteInterval) {
+    const noteTime = startTime + elapsed;
+    const freq = notes[noteIndex % notes.length];
+
+    // Osilatör (Ses Üreteci)
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    // 'triangle' dalga tipi marimba/akustik enstrüman benzeri yumuşak bir tını verir
+    osc.type = 'triangle'; 
+    osc.frequency.setValueAtTime(freq, noteTime);
+
+    // Zarf (Envelope): Notanın vuruş ve sönümlenme yumuşaklığı
+    gain.gain.setValueAtTime(0.001, noteTime);
+    // Vuruş anı (Attack) - Çok hızlı ama yumuşak başlasın
+    gain.gain.exponentialRampToValueAtTime(0.25, noteTime + 0.04);
+    // Sönümlenme (Decay) - Tatlı bir yankı ile kaybolsun
+    gain.gain.exponentialRampToValueAtTime(0.0001, noteTime + 0.4);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(noteTime);
+    osc.stop(noteTime + 0.45);
+
+    noteIndex++;
+  }
+
+  // 5. saniyenin sonunda AudioContext'i kapatıp hafızayı temizle
+  setTimeout(() => {
+    if (ctx.state !== 'closed') {
+      ctx.close();
     }
+  }, (duration + 0.5) * 1000);
+}
 
     // Klavye Kısayolları (Masaüstü için)
     document.addEventListener('keydown', (e) => {
