@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Set Zamanlayıcı</title>
+
+  <!-- Mobil / PWA Meta Etiketleri -->
+  <meta name="theme-color" content="#1e1e2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Set Timer">
+  
+  <!-- Dinamik Uygulama İkonu (SVG tabanlı) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%231e1e2e' stroke='%2389b4fa' stroke-width='8'/><path d='M50 20 V50 L70 50' stroke='%23a6e3a1' stroke-width='8' stroke-linecap='round'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%231e1e2e' stroke='%2389b4fa' stroke-width='8'/><path d='M50 20 V50 L70 50' stroke='%23a6e3a1' stroke-width='8' stroke-linecap='round'/></svg>">
+
+  <!-- Dahili PWA Manifest Bilgisi -->
+  <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Set%20Zamanlay%C4%B1c%C4%B1%22%2C%22short_name%22%3A%22Timer%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231e1e2e%22%2C%22theme_color%22%3A%22%231e1e2e%22%7D">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #1e1e2e;
+      color: #cdd6f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 1rem;
+    }
+
+    .container {
+      background-color: #313244;
+      padding: 2rem 1.5rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      text-align: center;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      color: #cba6f7;
+    }
+
+    .timer-display {
+      margin: 1.5rem 0;
+    }
+
+    #time-display {
+      font-size: 4.2rem;
+      font-weight: 700;
+      font-family: monospace;
+      color: #a6e3a1;
+      letter-spacing: -2px;
+    }
+
+    .step-info {
+      font-size: 0.95rem;
+      color: #bac2de;
+      margin-top: 0.5rem;
+      font-weight: 500;
+    }
+
+    .controls, .nav-controls {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      background-color: #89b4fa;
+      color: #11111b;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.9rem;
+      transition: background-color 0.2s, transform 0.1s;
+      flex: 1;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button:hover {
+      background-color: #b4befe;
+    }
+
+    button:disabled {
+      background-color: #45475a;
+      color: #7f849c;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .nav-btn {
+      background-color: #cba6f7;
+    }
+    
+    .nav-btn:hover {
+      background-color: #f5c2e7;
+    }
+
+    .presets {
+      margin-top: 1.5rem;
+      border-top: 1px solid #45475a;
+      padding-top: 1rem;
+    }
+
+    .presets h3 {
+      font-size: 1rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .presets button {
+      width: 100%;
+      margin-top: 6px;
+      background-color: #45475a;
+      color: #cdd6f4;
+    }
+
+    .presets button:hover {
+      background-color: #585b70;
+    }
+
+    .settings-panel {
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: #181825;
+      border-radius: 8px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.6rem;
+      margin-bottom: 0.8rem;
+      border-radius: 6px;
+      border: 1px solid #45475a;
+      background-color: #313244;
+      color: #fff;
+      text-align: center;
+      font-size: 1rem;
+      user-select: text;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Set Zamanlayıcı</h1>
+    
+    <div class="timer-display">
+      <span id="time-display">00:00</span>
+      <div id="step-info" class="step-info">Bir set seçin</div>
+    </div>
+
+    <!-- Adım Navigasyon Butonları -->
+    <div class="nav-controls">
+      <button id="prev-btn" class="nav-btn" onclick="prevStep()" disabled>◄ Geri</button>
+      <button id="next-btn" class="nav-btn" onclick="manualNextStep()" disabled>İleri ►</button>
+    </div>
+
+    <!-- Ana Kontrol Butonları -->
+    <div class="controls">
+      <button id="start-btn" onclick="startTimer()">Başlat</button>
+      <button id="pause-btn" onclick="pauseTimer()" disabled>Duraklat</button>
+      <button id="reset-btn" onclick="resetTimer()">Sıfırla</button>
+      <button id="settings-btn" onclick="toggleSettings()">Ayarlar</button>
+    </div>
+
+    <!-- Hazır Setler -->
+    <div class="presets">
+      <h3>Hazır Setler</h3>
+      <button onclick="loadPreset([480, 210, 180, 480])">8dk - 3.5dk - 3dk - 8dk</button>
+      <button onclick="loadPreset([300, 60, 300])">5dk - 1dk - 5dk</button>
+    </div>
+
+    <!-- Özel Süre Ayarları Paneli -->
+    <div id="settings-panel" class="settings-panel hidden">
+      <h3 style="margin-top:0;">Özel Set Oluştur</h3>
+      <p style="font-size: 0.8rem; color: #a6adc8;">Süreleri saniye cinsinden virgülle girin:</p>
+      <input type="text" id="custom-set-input" placeholder="480, 210, 180, 480">
+      <button onclick="applyCustomSet()" style="width: 100%;">Seti Yükle</button>
+    </div>
+  </div>
+
+  <script>
+    let currentSet = [];
+    let currentStepIndex = 0;
+    let timeRemaining = 0;
+    let timerInterval = null;
+    let isRunning = false;
+    let wakeLock = null;
+
+    const timeDisplay = document.getElementById('time-display');
+    const stepInfo = document.getElementById('step-info');
+    const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    // Ekran Kapanmasını Önleme (Wake Lock API)
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+        } catch (err) {
+          console.log('Wake Lock hatası:', err.message);
+        }
+      }
+    }
+
+    function releaseWakeLock() {
+      if (wakeLock !== null) {
+        wakeLock.release().then(() => {
+          wakeLock = null;
+        });
+      }
+    }
+
+    function updateDisplay() {
+      const minutes = Math.floor(timeRemaining / 60);
+      const seconds = timeRemaining % 60;
+      timeDisplay.textContent = 
+        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      
+      if (currentSet.length > 0) {
+        stepInfo.textContent = `Adım ${currentStepIndex + 1} / ${currentSet.length} (${Math.floor(currentSet[currentStepIndex] / 60)} dk ${currentSet[currentStepIndex] % 60} sn)`;
+        
+        prevBtn.disabled = currentStepIndex === 0;
+        nextBtn.disabled = currentStepIndex === currentSet.length - 1;
+      } else {
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+      }
+    }
+
+    function loadPreset(secondsArray) {
+      pauseTimer();
+      currentSet = secondsArray;
+      currentStepIndex = 0;
+      timeRemaining = currentSet[0];
+      updateDisplay();
+    }
+
+    function startTimer() {
+      if (currentSet.length === 0) {
+        alert("Lütfen önce bir set seçin veya ayarlar kısmından oluşturun!");
+        return;
+      }
+      
+      if (isRunning) return;
+      
+      isRunning = true;
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+      
+      requestWakeLock(); // Zamanlayıcı başladığında ekranın kapanmasını engelle
+
+      timerInterval = setInterval(() => {
+        if (timeRemaining > 0) {
+          timeRemaining--;
+          updateDisplay();
+        } else {
+          autoNextStep();
+        }
+      }, 1000);
+    }
+
+    function autoNextStep() {
+      clearInterval(timerInterval);
+      isRunning = false;
+      releaseWakeLock();
+      
+      playAlertSound();
+
+      if (currentStepIndex < currentSet.length - 1) {
+        currentStepIndex++;
+        timeRemaining = currentSet[currentStepIndex];
+        updateDisplay();
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+      } else {
+        stepInfo.textContent = "Tüm setler tamamlandı!";
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+      }
+    }
+
+    function manualNextStep() {
+      if (currentStepIndex < currentSet.length - 1) {
+        pauseTimer();
+        currentStepIndex++;
+        timeRemaining = currentSet[currentStepIndex];
+        updateDisplay();
+      }
+    }
+
+    function prevStep() {
+      if (currentStepIndex > 0) {
+        pauseTimer();
+        currentStepIndex--;
+        timeRemaining = currentSet[currentStepIndex];
+        updateDisplay();
+      }
+    }
+
+    function pauseTimer() {
+      clearInterval(timerInterval);
+      isRunning = false;
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      releaseWakeLock();
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      if (currentSet.length > 0) {
+        currentStepIndex = 0;
+        timeRemaining = currentSet[0];
+        updateDisplay();
+      }
+    }
+
+    function toggleSettings() {
+      const panel = document.getElementById('settings-panel');
+      panel.classList.toggle('hidden');
+    }
+
+    function applyCustomSet() {
+      const input = document.getElementById('custom-set-input').value;
+      const parsed = input.split(',').map(item => parseInt(item.trim())).filter(num => !isNaN(num) && num > 0);
+      
+      if (parsed.length > 0) {
+        loadPreset(parsed);
+        toggleSettings();
+      } else {
+        alert("Lütfen geçerli saniye değerleri girin (Örn: 480, 210, 180, 480)");
+      }
+    }
+
+    // İki tonlu çift "bip" uyarı sesi
+    function playAlertSound() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // 1. Ton
+      const osc1 = ctx.createOscillator();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc1.connect(ctx.destination);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.2);
+
+      // 2. Ton
+      const osc2 = ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.25);
+      osc2.connect(ctx.destination);
+      osc2.start(ctx.currentTime + 0.25);
+      osc2.stop(ctx.currentTime + 0.55);
+    }
+
+    // Klavye Kısayolları (Masaüstü için)
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      
+      if (e.key === 'ArrowRight') {
+        manualNextStep();
+      } else if (e.key === 'ArrowLeft') {
+        prevStep();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        isRunning ? pauseTimer() : startTimer();
+      }
+    });
+  </script>
+</body>
+</html>
